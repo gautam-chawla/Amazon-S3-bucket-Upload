@@ -3,7 +3,7 @@
 Easily integrate your CI applications to Amazon's Simple Storage Solution with this library.
 
 This library is created By Gautam Chawla
-
+# No Need to install sdk from composor. Pre-integrated SDK Library with Latest API version.
 # Setup
 
  Edit config/s3.php with your appropriate settings
