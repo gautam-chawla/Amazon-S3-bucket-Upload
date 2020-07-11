@@ -9,7 +9,7 @@ This library is created By Gautam Chawla
  Edit config/s3.php with your appropriate settings
  Copy config and library files to your CI installation
  
- #Include Library into controller
+ # Include Library into controller
  <pre><code>
   // Load Library
   $this->load->library('S3_bucket');
