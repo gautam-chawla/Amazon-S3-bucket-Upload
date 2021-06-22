@@ -1,6 +1,6 @@
 <?php
 
-require 'AWS/aws-autoloader.php'; // Include the AWS folder path here
+require 'AWS/aws-autoloader.php';
 use Aws\S3\S3Client;
 use Aws\Exception\AwsException;
 
@@ -28,7 +28,8 @@ class S3_bucket {
 
 	function upload_file($file_path,$file_name)
 	{
-        $this->s3_key = $this->folder_name."/".$file_name;
+        $this->s3_key = "upload_models/".$file_name.".crv"; //replace file extention according to your file ex. .pdf, .jpeg, .png etc
+		
 		try {       
         $clientS3 = new Aws\S3\S3Client([
           'version' => $this->version,
@@ -58,7 +59,38 @@ class S3_bucket {
         
 	}
     
-    function getFileDownloaded($my_file_name,$original_file){
+    function upload_allfile($file_path,$file_name,$folder,$ext)
+	{
+        $this->s3_key = $folder."/".$file_name.".".$ext;
+		try {       
+        $clientS3 = new Aws\S3\S3Client([
+          'version' => $this->version,
+          'region'  => $this->region,
+          'credentials' => [
+                    'key'    => $this->access_key,
+                    'secret' => $this->secret,
+              ],
+        ]);
+
+        // putObject method sends data to the chosen bucket (in our case, teste-marcelo)
+        $response = $clientS3->putObject(array(
+            'Bucket' => $this->bucket_name,
+            'Key'    => $this->s3_key,
+            'SourceFile' => $file_path,
+        ));
+            if($response['ObjectURL']){
+                $res['url'] = $response['ObjectURL'];
+                $res['s3_key'] = $this->s3_key;
+                return $res;
+            }
+            
+        } catch(Exception $e) {
+            echo "Error > {$e->getMessage()}";
+        }
+        
+	}
+    
+    function getFile($my_file_name,$original_file){
         $s3 = new S3Client([
             'credentials' => [ 
                     'key' => $this->access_key, 
@@ -87,6 +119,80 @@ class S3_bucket {
         }
     }
     
+	function getFilewithoutDownload($my_file_name,$original_file){
+        $s3 = new S3Client([
+            'credentials' => [ 
+                    'key' => $this->access_key, 
+                    'secret' => $this->secret 
+                ],
+            'version' => 'latest',
+            'region'  => 'us-east-2'
+        ]);
+
+        try {
+            //echo getcwd(); die;
+            // Get the object.
+            $result = $s3->getObject([
+                'Bucket' => $this->bucket_name,
+                'Key'    => $my_file_name,
+				'SaveAs' => getcwd().'/assets/s3/'.$original_file
+                
+            ]);
+          
+           // echo $result;
+        } catch (S3Exception $e) {
+            echo $e->getMessage() . PHP_EOL;
+        }
+    }
+	
+	public function getFileURL($my_file_name,$original_file){
+        $s3 = new S3Client([
+            'credentials' => [ 
+                    'key' => $this->access_key, 
+                    'secret' => $this->secret 
+                ],
+            'version' => 'latest',
+            'region'  => 'us-east-2'
+        ]);
+
+		$url = $s3->getObjectUrl('panmerc-batch',$original_file);
+		$cmd = $s3->getCommand('GetObject', [
+			'Bucket' => $bucket,
+			'Key' => $original_file
+		]);
+		
+		$request = $s3->createPresignedRequest($cmd, '+20 minutes');
+		$url = (string)$request->getUri();
+		return $url;
+		
+    }
+	
+	function getProofFilewithoutDownload($my_file_name){
+        $s3 = new S3Client([
+            'credentials' => [ 
+                    'key' => $this->access_key, 
+                    'secret' => $this->secret 
+                ],
+            'version' => 'latest',
+            'region'  => 'us-east-2'
+        ]);
+
+        try {
+            //echo getcwd(); die;
+            // Get the object.
+            $result = $s3->getObject([
+                'Bucket' => $bucket,
+                'Key'    => $my_file_name,
+				'SaveAs' => getcwd().'/assets/s3/a.pdf'
+                
+            ]);
+          
+           // echo $result;
+        } catch (S3Exception $e) {
+            echo $e->getMessage() . PHP_EOL;
+        }
+    }
+	
     function listObjectsinBucket(){
         $s3 = new S3Client([
             'credentials' => [ 
@@ -140,6 +246,93 @@ class S3_bucket {
             exit('Error: ' . $e->getAwsErrorMessage() . PHP_EOL);
         }
  
+    }
+	
+	function createFolder($bucket,$mainfolder,$name){
+        $s3 = new S3Client([
+            'credentials' => [ 
+                    'key' => $this->access_key, 
+                    'secret' => $this->secret 
+                ],
+            'version' => 'latest',
+            'region'  => 'us-east-2'
+        ]);
+
+        try {
+			
+            // Get the object.
+            $result =  $s3->putObject(array( 
+                'Bucket' => $bucket,
+                'Key'    => $mainfolder."/".$name."/",
+               /* 'Body'   => "",
+                'ACL'    => 'public-read'*/
+            ));
+          
+            return $result;
+        } catch (S3Exception $e) {
+            echo $e->getMessage() . PHP_EOL;
+        }
+    }
+	
+	function upload_fileinFolder($bucket,$file_name,$file_path)
+	{
+        
+		try {       
+        $clientS3 = new Aws\S3\S3Client([
+          'version' => $this->version,
+          'region'  => $this->region,
+          //'endpoint' => $this->s3_url,
+          'credentials' => [
+                    'key'    => $this->access_key,
+                    'secret' => $this->secret,
+              ],
+        ]);
+
+        // putObject method sends data to the chosen bucket (in our case, teste-marcelo)
+        $response = $clientS3->putObject(array(
+            'Bucket' => $bucket,
+            'Key'    => $file_name,
+            'SourceFile' => $file_path,
+        ));
+            if($response['ObjectURL']){
+               
+                return $response;//die;
+            }
+            
+        } catch(Exception $e) {
+            echo "Error > {$e->getMessage()}";
+        }
+        
+	}
+
+    function listObjectsinBucketBatch($bucket, $folder){
+        $s3 = new S3Client([
+            'credentials' => [ 
+                    'key' => $this->access_key, 
+                    'secret' => $this->secret 
+                ],
+            'version' => 'latest',
+            'region'  => 'us-east-2'
+        ]);
+
+        try {
+            // Get the object.
+           /* $iterator = $client->getIterator('ListObjects', array(
+                    'Bucket' => $bucket,
+                    'Prefix' => 'foo'
+                ));*/
+            $result = $s3->getIterator('ListObjects',[
+                'Bucket' => '<Your Bucket Name>',
+                'Prefix'=> '<Your Main Folder Name>/'.$bucket.'/'.$folder.'/'
+            ]);
+            $res = array();
+            foreach ($result as $object) {
+               $res[] = $object['Key'];
+            }
+           return $res;
+        } catch (S3Exception $e) {
+            echo $e->getMessage() . PHP_EOL;
+        }
     }
 
 }
